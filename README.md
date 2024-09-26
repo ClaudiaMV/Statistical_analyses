@@ -1,10 +1,6 @@
 # LME_analysis with pairwise comparisons
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-This repository contains the R code for simulating future events based on two main predictors (`predictor1` and `predictor2`). The code performs data cleaning, checks for missing values, fits a series of linear mixed models (MLMs), and conducts post-hoc comparisons in case of interactions.
+This repository contains the R code analyzing an outcome based on two main predictors (`predictor1` and `predictor2`). The code performs data cleaning, checks for missing values, fits a series of linear mixed models (MLMs), and conducts post-hoc comparisons in case of interactions.
 
 ## Prerequisites
 
