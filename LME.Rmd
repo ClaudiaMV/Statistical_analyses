@@ -9,8 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This repository contains the R code for simulating future events based on two main predictors (`predictor1` and `predictor2`). The code performs data cleaning, checks for missing values, fits a series of linear mixed models (MLMs), and conducts post-hoc comparisons in case of interactions.
-
 ## Prerequisites
 
 The following R libraries are required for the code to run:
@@ -20,10 +18,13 @@ The following R libraries are required for the code to run:
 - `lme4`: Fitting Linear and Generalized Linear Mixed-Effects Models
 - `lmerTest`: Tests in linear mixed-effects models
 - `emmeans`: Estimated marginal means and pairwise comparisons
+- `effects`: Visualizing interaction effects
+- `sjPlot`: Plotting tools for social science data
 
 ## Code Breakdown
 
 ### Data Loading and Cleaning
+
 The dataset (`file_name.csv`) is loaded, and the variable names are cleaned using `janitor::clean_names()` for consistency.
 
 ```{r database}
@@ -32,64 +33,91 @@ db <- clean_names(db)
 ```
 
 ### Variable Definitions
+
 The code defines key variables for the analysis:
 
-- **Random effect**: `participant`
+- **Random effects**: `random1` and `random2` (factors for random variables)
 - **Predictors**: `predictor1` and `predictor2`
 - **Outcome**: `outcome`
 
 ```{r variables}
-participant <- factor(db$random_variable)
+random1 <- factor(db$random_variable1)
+random2 <- factor(db$random_variable2)
 predictor1 <- factor(db$predictor1)
 predictor2 <- factor(db$predictor2)
 outcome <- db$outcome
 ```
 
 ### Checking for Missing Values
+
 The code checks for missing values in the dataset row-wise and column-wise and prints messages accordingly.
 
-```{r missing values}
+```{r NA}
 any_na <- any(is.na(db))
 any_na_row <- apply(db, 1, function(row) any(is.na(row)))
 any_na_col <- apply(db, 2, function(col) any(is.na(col)))
+
+if (any_na) {
+  print("There are NA values in the matrix.")
+} else {
+  print("There are no NA values in the matrix.")
+}
+
+if (any(any_na_row)) {
+  print("There are NA values in one or more rows of the matrix.")
+} else {
+  print("There are no NA values in any rows of the matrix.")
+}
+
+if (any(any_na_col)) {
+  print("There are NA values in one or more columns of the matrix.")
+} else {
+  print("There are no NA values in any columns of the matrix.")
+}
 ```
 
 ### Model Building
+
 The following models are fitted using linear mixed models (`lmer`):
 
-- **Model 1**: Null model (intercept only)
-- **Model 2**: Main effect of `predictor1`
-- **Model 3**: Main effect of `predictor2`
-- **Model 4**: Both main effects (`predictor1` and `predictor2`)
-- **Model 5**: Interaction between `predictor1` and `predictor2`
+- **Model 1a**: Null model with `random1` as a random effect
+- **Model 1b**: Null model with `random2` as a random effect
+- **Model 2**: Main effect of `predictor1` with `random1` and `random2` as random effects
+- **Model 3**: Main effect of `predictor2` with `random1` and `random2` as random effects
+- **Model 4**: Main effects of both `predictor1` and `predictor2` with `random1` and `random2`
+- **Model 5**: Interaction between `predictor1` and `predictor2` with `random1` and `random2`
 
-```{r model}
-model1 <- lmer(outcome ~ 1 + (1|participant), data = db, REML = FALSE)
-model2 <- lmer(outcome ~ predictor1 + (1|participant), data = db, REML = FALSE)
-model3 <- lmer(outcome ~ predictor2 + (1|participant), data = db, REML = FALSE)
-model4 <- lmer(outcome ~ predictor1 + predictor2 + (1|participant), data = db, REML = FALSE)
-model5 <- lmer(outcome ~ predictor1 * predictor2 + (1|participant), data = db, REML = FALSE)
+```{r models}
+model1a <- lmer(outcome ~ 1 + (1|random1), data = db, REML = FALSE)
+model1b <- lmer(outcome ~ 1 + (1|random2), data = db, REML = FALSE)
+
+model2 <- lmer(outcome ~ predictor1 + (1|random1) + (1|random2), data = db, REML = FALSE)
+model3 <- lmer(outcome ~ predictor2 + (1|random1) + (1|random2), data = db, REML = FALSE)
+model4 <- lmer(outcome ~ predictor1 + predictor2 + (1|random1) + (1|random2), data = db, REML = FALSE)
+model5 <- lmer(outcome ~ predictor1 * predictor2 + (1|random1) + (1|random2), data = db, REML = FALSE)
 ```
 
 ### Model Comparisons
+
 The `anova` function is used to compare models to determine the effects of the predictors.
 
-```{r anovas}
-anova(model4, model3)
-anova(model4, model2)
-anova(model5, model4)
+```{r comparisons}
+anova(model4, model3) # Main effect of predictor1
+anova(model4, model2) # Main effect of predictor2
+anova(model5, model4) # Interaction effect
 ```
 
 ### Post-Hoc Comparisons (in case of interaction)
-If an interaction between the predictors is found, post-hoc comparisons are conducted using the `emmeans` package. Results are converted to a data frame and significance is indicated.
+
+If an interaction between `predictor1` and `predictor2` is found, post-hoc comparisons are conducted using the `emmeans` package. The results are then converted into a data frame, and significance is indicated.
 
 ```{r pairwise comparisons}
-emm_outcome <- emmeans(model5, ~ predictor1 * predictor2)
-pairwise_comparisons2 <- pairs(emm_outcome)
-adjusted_comparisons2 <- summary(pairwise_comparisons2)
-results_df2 <- as.data.frame(adjusted_comparisons2)
-results_df2$Significant <- results_df2$p.value < 0.05
-print(results_df2)
+emm <- emmeans(model5, ~ predictor1 * predictor2)
+pairwise_comparisons <- pairs(emm)
+adjusted_comparisons <- summary(pairwise_comparisons)
+results_df <- as.data.frame(adjusted_comparisons)
+results_df$Significant <- results_df$p.value < 0.05
+print(results_df)
 ```
 
 ## Usage
