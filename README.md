@@ -1,10 +1,4 @@
-# Statistical_analyses
----
-title: "LME"
-author: "Claudia Morales Valiente"
-date: "2024-09-26"
-output: html_document
----
+# LME_analysis with pairwise comparisons
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
