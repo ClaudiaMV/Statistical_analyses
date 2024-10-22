@@ -117,5 +117,3 @@ print(results_df)
 4. The script will print model comparison results and indicate significant post-hoc comparisons, if any.
 
 ---
-
-This `README.md` now aligns with the latest code and is ready to be used in your project.
